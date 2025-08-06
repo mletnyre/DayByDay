@@ -6,9 +6,6 @@
 //TODO 
 //FINISH THE OVERRIDE FUNTIONALITY
 
-//TERMINAL STUFF
-#include <sys/ioctl.h>
-#include <unistd.h>
 
 int alreadyDidToday(const char* path, char* now){
     //opening file
@@ -69,8 +66,8 @@ int OverRide(const char* filepath){
     }
 }
 
+//if the user inputs a value for the day
 int dayRating(int value){
-    //if the user inputs a value for the day
     time_t now = time(NULL);
     struct tm *timeinfo = localtime(&now);
     char date[64];
@@ -86,7 +83,7 @@ int dayRating(int value){
         return -1;
     }
 
-    printf("inputting data\n");
+    printf("You entered %d\nRecording Data\n", value);
 
     //some funky buisiness
     snprintf(fullpath, sizeof(fullpath), "%s/Documents/DayByDay",home);
@@ -106,90 +103,84 @@ int dayRating(int value){
     return 0;
 }
 
-int get_terminal_size() {
-    struct winsize w;
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) {
-        perror("ioctl");
-        return -1;
+
+//takes in a value and prints out the corresponding color
+void valueToColor(int v){
+    switch (v) {
+        case 1:
+            printf("\033[41m  \033[0m"); //Red 
+            break;
+        case 2:
+            printf("\033[48;5;208m  \033[0m");  //Orange
+            break;
+        case 3:
+            printf("\033[43m  \033[0m");  //Yellow 
+            break;
+        case 4:
+            printf("\033[100m  \033[0m");  //Bright gray 
+            break;
+        case 5:
+            printf("\033[40m  \033[0m");  //Black 
+            break;
+        case 6:
+            printf("\033[47m  \033[0m");  //White 
+            break;
+        case 7:
+            printf("\033[44m  \033[0m");  //Blue 
+            break;
+        case 8:
+            printf("\033[46m  \033[0m");  //Cyan 
+            break;
+        case 9:
+            printf("\033[45m  \033[0m");  //Magenta 
+            break;
+        case 0:
+            printf("\033[42m  \033[0m");  //Green 
+            break;
+        default:
+            printf("  "); 
+            break;
     }
-    return w.ws_col;
 }
 
-int display(){
+void printKey(){
     printf("Displaying\nKey:\n");
     printf(
-        "\033[41m  \033[0m"     // red bg
-        "\033[48;5;208m  \033[0m"  // orange bg (256 color)
-        "\033[43m  \033[0m"     // yellow bg
-        "\033[100m  \033[0m"    // bright gray bg
-        "\033[40m  \033[0m"     // black bg
-        "\033[47m  \033[0m"     // white bg
-        "\033[44m  \033[0m"     // blue bg
-        "\033[46m  \033[0m"     // cyan bg
-        "\033[45m  \033[0m"     // magenta bg
-        "\033[42m  \033[0m"     // green bg
+        "\033[41m  \033[0m"     // red 
+        "\033[48;5;208m  \033[0m"  // orange might not work with some termianls
+        "\033[43m  \033[0m"     // yellow 
+        "\033[100m  \033[0m"    // bright gray 
+        "\033[40m  \033[0m"     // black 
+        "\033[47m  \033[0m"     // white 
+        "\033[44m  \033[0m"     // blue 
+        "\033[46m  \033[0m"     // cyan 
+        "\033[45m  \033[0m"     // magenta 
+        "\033[42m  \033[0m"     // green 
         "\n"
         );
     printf("1 2 3 4 5 6 7 8 9 0\n\n\n");
+}
+
+int display(){
+
+    printKey();
 
     //grab the home env
     const char* home = getenv("HOME");
+
     char fullpath[128];
-
-    snprintf(fullpath, sizeof(fullpath), "%s/Documents/DayByDay",home);
-    FILE *fp = fopen(fullpath ,"r");
-
     char line[1024];
     int count = 0;
 
-    int terminalSize = get_terminal_size();
-    
+    snprintf(fullpath, sizeof(fullpath), "%s/Documents/DayByDay",home);
+    FILE *fp = fopen(fullpath ,"r");
 
     while(fgets(line, sizeof(line), fp)){
         char* rating = strchr(line, ' ') + 1;
         //printf("rating: %c\n", *rating);
         int ratingINT = atoi(rating);
-
-        if(count == terminalSize/2){
-            printf("\n");
-        }
         
-        switch (ratingINT) {
-            case 1:
-                printf("\033[41m  \033[0m");  // Red background
-                break;
-            case 2:
-                printf("\033[48;5;208m  \033[0m");  // Orange background
-                break;
-            case 3:
-                printf("\033[43m  \033[0m");  // Yellow background
-                break;
-            case 4:
-                printf("\033[100m  \033[0m");  // Bright gray background
-                break;
-            case 5:
-                printf("\033[40m  \033[0m");  // Black background
-                break;
-            case 6:
-                printf("\033[47m  \033[0m");  // White background
-                break;
-            case 7:
-                printf("\033[44m  \033[0m");  // Blue background
-                break;
-            case 8:
-                printf("\033[46m  \033[0m");  // Cyan background
-                break;
-            case 9:
-                printf("\033[45m  \033[0m");  // Magenta background
-                break;
-            case 10:  // You said 10 maps to 0
-            case 0:
-                printf("\033[42m  \033[0m");  // Green background
-                break;
-            default:
-                printf("  ");  // Empty block for unknown ratings
-                break;
-        }
+        valueToColor(ratingINT);
         count++;
     }
     printf("\n");
@@ -197,24 +188,22 @@ int display(){
 }
 
 int main(int argc, char* argv[]){
-
+    //Checking for exactly 1 input
     if(argc != 2){
-        printf("Include rating or -d flag to display\n");
+        perror("Include rating or -d flag to display\n");
         return -1;
     }
 
-    int value;
     char* arg = argv[1];
 
     if(strcmp(arg, "-d") == 0){
-        value = display();
+        return display();
     }
     else{
+        int value;
         value = atoi(argv[1]);
         dayRating(value);
     }
 
-
     return 0;
-
 }
